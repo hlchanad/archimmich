@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: chanhonlun/archimmich-web
+  IMAGE_NAME: ${{ github.actor }}/archimmich-web
 
 jobs:
   build-and-push:
