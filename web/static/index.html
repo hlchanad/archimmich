@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArchImmich Web Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="/favicon-16.png">
+</head>
+<body>
+    <div class="glass-bg-container">
+        <div class="circle circle-1"></div>
+        <div class="circle circle-2"></div>
+    </div>
+
+    <!-- Login Container -->
+    <div id="login-container" class="auth-card glass-panel">
+        <div class="brand">
+            <svg class="brand-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+            </svg>
+            <h2>ArchImmich</h2>
+            <p>Export & Archive your Immich memories</p>
+        </div>
+        <form id="login-form">
+            <div class="form-group">
+                <label for="server-url">Immich Server URL</label>
+                <input type="url" id="server-url" placeholder="https://immich.example.com" required>
+            </div>
+            <div class="form-group">
+                <label for="api-key">API Key</label>
+                <input type="password" id="api-key" placeholder="Enter your Immich API Key" required>
+            </div>
+            <div class="form-group checkbox-group">
+                <input type="checkbox" id="remember-me" checked>
+                <label for="remember-me">Remember credentials</label>
+            </div>
+            <button type="submit" id="btn-login" class="btn btn-primary">
+                <span>Connect to Server</span>
+                <span class="spinner hidden"></span>
+            </button>
+        </form>
+        <div id="login-error" class="alert alert-danger hidden"></div>
+    </div>
+
+    <!-- Main Dashboard Container -->
+    <div id="dashboard-container" class="dashboard-layout hidden">
+        <!-- Top Navigation Header -->
+        <header class="glass-panel main-header">
+            <div class="header-logo">
+                <svg class="brand-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                </svg>
+                <h1>ArchImmich Web</h1>
+            </div>
+            <div class="user-profile" id="user-profile-badge">
+                <div class="user-avatar" id="profile-avatar">AI</div>
+                <div class="user-meta">
+                    <span class="username" id="profile-username">Loading...</span>
+                    <span class="user-role" id="profile-email">Connecting...</span>
+                </div>
+                <button id="btn-logout" class="btn btn-icon" title="Logout">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Dashboard Content -->
+        <main class="dashboard-grid">
+            <!-- Left Side: Buckets List -->
+            <section class="glass-panel main-content">
+                <div class="section-header">
+                    <h2>Media Buckets</h2>
+                    <div class="bucket-actions">
+                        <button id="btn-fetch-buckets" class="btn btn-secondary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon">
+                                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                            </svg>
+                            Fetch Buckets
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bucket Filters Form -->
+                <div class="filter-bar">
+                    <div class="filter-item">
+                        <label for="filter-archived">
+                            <input type="checkbox" id="filter-archived"> Archived Only
+                        </label>
+                    </div>
+                    <div class="filter-item">
+                        <label for="filter-favorite">
+                            <input type="checkbox" id="filter-favorite"> Favorites Only
+                        </label>
+                    </div>
+                    <div class="filter-item">
+                        <label for="filter-order">Order</label>
+                        <div class="custom-select" id="custom-order-select">
+                            <div class="custom-select-trigger">
+                                <span id="custom-select-value">Newest First</span>
+                                <svg class="custom-select-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+                            <div class="custom-options-container">
+                                <div class="custom-option selected" data-value="desc">Newest First</div>
+                                <div class="custom-option" data-value="asc">Oldest First</div>
+                            </div>
+                        </div>
+                        <select id="filter-order" class="hidden">
+                            <option value="desc" selected>Newest First</option>
+                            <option value="asc">Oldest First</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Table of Buckets -->
+                <div class="table-container">
+                    <table id="buckets-table">
+                        <thead>
+                            <tr>
+                                <th width="40"><input type="checkbox" id="select-all-buckets"></th>
+                                <th>Bucket Time</th>
+                                <th>Count</th>
+                            </tr>
+                        </thead>
+                        <tbody id="buckets-list">
+                            <tr>
+                                <td colspan="3" class="placeholder-text">Click "Fetch Buckets" to retrieve timeline.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Right Side: Export Settings & Controls -->
+            <section class="dashboard-sidebar">
+                <!-- Settings Panel -->
+                <div class="glass-panel card-settings">
+                    <h3>Export Settings</h3>
+                    <div class="form-group">
+                        <label for="max-archive-size">Max Archive Size (MB)</label>
+                        <input type="number" id="max-archive-size" value="1024" min="50" step="50">
+                        <small>Split files into multiple zip archives if bucket size exceeds this value.</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Output Location</label>
+                        <div class="path-display" id="downloads-path-display">/downloads (NAS Mount)</div>
+                    </div>
+                    <div class="actions-group">
+                        <button id="btn-start-export" class="btn btn-success btn-large" disabled>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                            </svg>
+                            Start Export
+                        </button>
+                        <button id="btn-stop-export" class="btn btn-danger btn-large hidden">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon">
+                                <rect x="4" y="4" width="16" height="16" rx="2" ry="2"/>
+                            </svg>
+                            Stop Export
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Completed Archives Card -->
+                <div class="glass-panel card-downloads">
+                    <h3>Completed Archives</h3>
+                    <div id="downloads-list" class="downloads-container">
+                        <div class="placeholder-text">No archives completed yet.</div>
+                    </div>
+                </div>
+
+                <!-- Progress and Logging Card -->
+                <div class="glass-panel card-progress">
+                    <h3>Execution Status</h3>
+                    
+                    <div class="status-indicator">
+                        <span class="status-label">Status:</span>
+                        <span class="status-value" id="current-status-text">Idle</span>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="progress-container hidden" id="progress-wrapper">
+                        <div class="progress-details">
+                            <span id="progress-label">Export progress</span>
+                            <span id="progress-percent-val">0%</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Logs Console Terminal -->
+                    <div class="terminal-logs">
+                        <div class="terminal-header">
+                            <span>console.log</span>
+                            <button id="btn-clear-logs" class="btn-clear">Clear</button>
+                        </div>
+                        <div class="terminal-body" id="logs-console">
+                            <div class="log-line system-msg">Console system initialized. Ready to export.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

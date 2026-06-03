@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  archimmich-web:
+    build: .
+    container_name: archimmich-web
+    ports:
+      - "8000:8000"
+    volumes:
+      # Map config directory to store config.json and log files
+      - ./config:/config
+      # Map downloads directory to store completed archives locally or on NAS storage
+      - ./downloads:/downloads
+    restart: unless-stopped
+    environment:
+      - ARCHIMMICH_CONFIG_DIR=/config
+      - ARCHIMMICH_DOWNLOADS_DIR=/downloads
+    # Optional DNS settings for custom resolvers like AdGuard Home
+    # dns:
+    #   - 192.168.1.1 # Your AdGuard/Router IP
+    #   - 1.1.1.1     # Fallback DNS
+    #
+    # Optional local host routing mapping
+    # extra_hosts:
+    #   - "immich.internal:host-gateway"
+
