@@ -4,13 +4,11 @@ on:
   push:
     branches:
       - main
-      - master
   workflow_dispatch: # Enable manual trigger from GitHub Actions tab
 
 env:
   REGISTRY: ghcr.io
-  # Converts repository name to lowercase to prevent build failure on mixed-case usernames
-  IMAGE_NAME: ${{ github.repository }}-web
+  IMAGE_NAME: chanhonlun/archimmich-web
 
 jobs:
   build-and-push:
@@ -42,7 +40,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref_name == 'main' || github.ref_name == 'master' }}
+            type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
             type=ref,event=branch
             type=sha,format=short
 
