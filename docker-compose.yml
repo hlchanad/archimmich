@@ -15,3 +15,12 @@ services:
     environment:
       - ARCHIMMICH_CONFIG_DIR=/config
       - ARCHIMMICH_DOWNLOADS_DIR=/downloads
+    # Optional DNS settings for custom resolvers like AdGuard Home
+    # dns:
+    #   - 192.168.1.1 # Your AdGuard/Router IP
+    #   - 1.1.1.1     # Fallback DNS
+    #
+    # Optional local host routing mapping
+    # extra_hosts:
+    #   - "immich.internal:host-gateway"
+
