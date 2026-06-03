@@ -4,7 +4,15 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*' # Trigger on version tags (e.g. v1.0.0)
   workflow_dispatch: # Enable manual trigger from GitHub Actions tab
+    inputs:
+      version:
+        description: 'Optional custom version tag (e.g., v0.1.0-test)'
+        required: false
+        default: ''
+        type: string
 
 env:
   REGISTRY: ghcr.io
@@ -41,6 +49,9 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
+            type=raw,value=${{ inputs.version }},enable=${{ inputs.version != '' }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
             type=ref,event=branch
             type=sha,format=short
 
