@@ -29,7 +29,7 @@ You can download the latest version of ArchImmich from the official GitHub relea
 
 ---
 
-## **Dockerized Web Version (v0.1.0)**
+## **Dockerized Web Version (v0.1.1)**
 
 For headless server setups and NAS deployments (e.g., Synology, Unraid, TrueNAS), you can run the web-wrapped version of ArchImmich. This runs a FastAPI web client on port `8000` powered by the underlying `v0.3.1` desktop engine.
 
