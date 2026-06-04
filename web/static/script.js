@@ -15,6 +15,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const profileEmail = document.getElementById("profile-email");
     const btnLogout = document.getElementById("btn-logout");
 
+    // DOM Elements - Tabs / Navigation
+    const tabTimeline = document.getElementById("tab-timeline");
+    const tabAlbums = document.getElementById("tab-albums");
+    const timelineFilters = document.getElementById("timeline-filters");
+    const albumFilters = document.getElementById("album-filters");
+    const timelineContainer = document.getElementById("timeline-container");
+    const albumsContainer = document.getElementById("albums-container");
+    const searchAlbumsInput = document.getElementById("search-albums");
+    const selectAllAlbums = document.getElementById("select-all-albums");
+    const albumsList = document.getElementById("albums-list");
+    const fetchBtnText = document.getElementById("fetch-btn-text");
+
     // DOM Elements - Buckets
     const btnFetchBuckets = document.getElementById("btn-fetch-buckets");
     const filterArchived = document.getElementById("filter-archived");
@@ -41,6 +53,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let statusInterval = null;
     let logEventSource = null;
     let availableBuckets = [];
+    let availableAlbums = [];
+    let activeTab = "timeline";
 
     // Initialize application
     init();
@@ -57,62 +71,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 apiKeyInput.value = config.api_key;
             }
             if (config.downloads_dir) {
-                const suffix = config.downloads_dir === "/downloads" ? " (NAS Mount)" : "";
-                downloadsPathDisplay.textContent = `${config.downloads_dir}${suffix}`;
+                downloadsPathDisplay.textContent = `${config.downloads_dir} (NAS Mount)`;
             }
         } catch (e) {
             console.error("Failed to load configuration", e);
         }
 
-        // Setup custom select dropdown elements
-        setupCustomSelects();
-
         // Check active connection status
         checkStatus();
-    }
-
-    function setupCustomSelects() {
-        const customSelect = document.getElementById("custom-order-select");
-        if (!customSelect) return;
-
-        const trigger = customSelect.querySelector(".custom-select-trigger");
-        const valSpan = document.getElementById("custom-select-value");
-        const options = customSelect.querySelectorAll(".custom-option");
-
-        // Toggle open
-        trigger.addEventListener("click", (e) => {
-            e.stopPropagation();
-            customSelect.classList.toggle("open");
-        });
-
-        // Close on outside click
-        window.addEventListener("click", () => {
-            customSelect.classList.remove("open");
-        });
-
-        // Option selection click handler
-        options.forEach(opt => {
-            opt.addEventListener("click", (e) => {
-                e.stopPropagation();
-                
-                // Clear selection states
-                options.forEach(o => o.classList.remove("selected"));
-                opt.classList.add("selected");
-                
-                const val = opt.getAttribute("data-value");
-                const text = opt.textContent;
-                
-                // Update display value
-                valSpan.textContent = text;
-                
-                // Set native filter value and trigger change event
-                filterOrder.value = val;
-                filterOrder.dispatchEvent(new Event("change"));
-                
-                // Close list
-                customSelect.classList.remove("open");
-            });
-        });
     }
 
     async function checkStatus() {
@@ -129,6 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 startLogStream();
                 startStatusPolling();
                 loadDownloads();
+                setupCustomSelects();
             } else {
                 showLogin();
             }
@@ -195,6 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 startLogStream();
                 startStatusPolling();
                 loadDownloads();
+                setupCustomSelects();
             } else {
                 loginError.textContent = data.detail || "Connection failed. Please verify credentials.";
                 loginError.classList.remove("hidden");
@@ -217,11 +185,101 @@ document.addEventListener("DOMContentLoaded", () => {
         showLogin();
     });
 
-    // Fetch Buckets handler
-    btnFetchBuckets.addEventListener("click", fetchBuckets);
-    filterArchived.addEventListener("change", fetchBuckets);
-    filterFavorite.addEventListener("change", fetchBuckets);
-    filterOrder.addEventListener("change", fetchBuckets);
+    function setupCustomSelects() {
+        const customSelect = document.getElementById("custom-order-select");
+        if (!customSelect) return;
+
+        const trigger = customSelect.querySelector(".custom-select-trigger");
+        const valSpan = document.getElementById("custom-select-value");
+        const options = customSelect.querySelectorAll(".custom-option");
+
+        // Toggle open
+        trigger.addEventListener("click", (e) => {
+            e.stopPropagation();
+            customSelect.classList.toggle("open");
+        });
+
+        // Close on outside click
+        window.addEventListener("click", () => {
+            customSelect.classList.remove("open");
+        });
+
+        // Option selection click handler
+        options.forEach(opt => {
+            opt.addEventListener("click", (e) => {
+                e.stopPropagation();
+                
+                // Clear selection states
+                options.forEach(o => o.classList.remove("selected"));
+                opt.classList.add("selected");
+                
+                const val = opt.getAttribute("data-value");
+                const text = opt.textContent;
+                
+                // Update display value
+                valSpan.textContent = text;
+                
+                // Set native filter value and trigger change event
+                filterOrder.value = val;
+                filterOrder.dispatchEvent(new Event("change"));
+                
+                // Close list
+                customSelect.classList.remove("open");
+            });
+        });
+    }
+
+    // Tab Switcher handlers
+    tabTimeline.addEventListener("click", () => {
+        activeTab = "timeline";
+        tabTimeline.classList.add("active");
+        tabAlbums.classList.remove("active");
+        
+        timelineFilters.classList.remove("hidden");
+        albumFilters.classList.add("hidden");
+        timelineContainer.classList.remove("hidden");
+        albumsContainer.classList.add("hidden");
+        
+        fetchBtnText.textContent = "Fetch Buckets";
+        updateStartExportButtonState();
+    });
+
+    tabAlbums.addEventListener("click", () => {
+        activeTab = "albums";
+        tabTimeline.classList.remove("active");
+        tabAlbums.classList.add("active");
+        
+        timelineFilters.classList.add("hidden");
+        albumFilters.classList.remove("hidden");
+        timelineContainer.classList.add("hidden");
+        albumsContainer.classList.remove("hidden");
+        
+        fetchBtnText.textContent = "Fetch Albums";
+        if (availableAlbums.length === 0) {
+            fetchAlbums();
+        } else {
+            updateStartExportButtonState();
+        }
+    });
+
+    // Unified Fetch handler
+    btnFetchBuckets.addEventListener("click", () => {
+        if (activeTab === "timeline") {
+            fetchBuckets();
+        } else {
+            fetchAlbums();
+        }
+    });
+
+    filterArchived.addEventListener("change", () => {
+        if (activeTab === "timeline") fetchBuckets();
+    });
+    filterFavorite.addEventListener("change", () => {
+        if (activeTab === "timeline") fetchBuckets();
+    });
+    filterOrder.addEventListener("change", () => {
+        if (activeTab === "timeline") fetchBuckets();
+    });
 
     async function fetchBuckets() {
         btnFetchBuckets.disabled = true;
@@ -241,6 +299,23 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) {
             console.error(e);
             bucketsList.innerHTML = `<tr><td colspan="3" class="placeholder-text error">Failed to load buckets from Immich API.</td></tr>`;
+        } finally {
+            btnFetchBuckets.disabled = false;
+        }
+    }
+
+    async function fetchAlbums() {
+        btnFetchBuckets.disabled = true;
+        try {
+            const res = await fetch("/api/albums");
+            if (!res.ok) throw new Error("Failed to fetch albums");
+            
+            const data = await res.json();
+            availableAlbums = data.albums || [];
+            renderAlbumsList();
+        } catch (e) {
+            console.error(e);
+            albumsList.innerHTML = `<tr><td colspan="3" class="placeholder-text error">Failed to load albums from Immich API.</td></tr>`;
         } finally {
             btnFetchBuckets.disabled = false;
         }
@@ -278,7 +353,36 @@ document.addEventListener("DOMContentLoaded", () => {
         updateStartExportButtonState();
     }
 
-    // Select all checkbox
+    function renderAlbumsList(filteredList = null) {
+        const list = filteredList || availableAlbums;
+        if (list.length === 0) {
+            albumsList.innerHTML = `<tr><td colspan="3" class="placeholder-text">No albums found.</td></tr>`;
+            btnStartExport.disabled = true;
+            return;
+        }
+
+        albumsList.innerHTML = "";
+        list.forEach(album => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td><input type="checkbox" class="album-checkbox" value="${album.id}"></td>
+                <td><strong>${album.albumName}</strong></td>
+                <td>${album.assetCount} items</td>
+            `;
+            albumsList.appendChild(row);
+        });
+
+        // Re-bind checkbox listeners
+        const checks = document.querySelectorAll(".album-checkbox");
+        checks.forEach(c => {
+            c.addEventListener("change", updateStartExportButtonState);
+        });
+
+        selectAllAlbums.checked = false;
+        updateStartExportButtonState();
+    }
+
+    // Select all checkboxes
     selectAllBuckets.addEventListener("change", (e) => {
         const checks = document.querySelectorAll(".bucket-checkbox");
         checks.forEach(c => {
@@ -287,25 +391,51 @@ document.addEventListener("DOMContentLoaded", () => {
         updateStartExportButtonState();
     });
 
+    selectAllAlbums.addEventListener("change", (e) => {
+        const checks = document.querySelectorAll(".album-checkbox");
+        checks.forEach(c => {
+            c.checked = e.target.checked;
+        });
+        updateStartExportButtonState();
+    });
+
+    // Client-side album search filter
+    searchAlbumsInput.addEventListener("input", (e) => {
+        const query = e.target.value.toLowerCase();
+        const filtered = availableAlbums.filter(album => 
+            album.albumName.toLowerCase().includes(query)
+        );
+        renderAlbumsList(filtered);
+    });
+
     function updateStartExportButtonState() {
-        const checkedCount = document.querySelectorAll(".bucket-checkbox:checked").length;
-        btnStartExport.disabled = checkedCount === 0;
+        if (activeTab === "timeline") {
+            const checkedCount = document.querySelectorAll(".bucket-checkbox:checked").length;
+            btnStartExport.disabled = checkedCount === 0;
+        } else {
+            const checkedCount = document.querySelectorAll(".album-checkbox:checked").length;
+            btnStartExport.disabled = checkedCount === 0;
+        }
     }
 
     // Start Export Execution
     btnStartExport.addEventListener("click", async () => {
-        const checkedBoxes = document.querySelectorAll(".bucket-checkbox:checked");
-        const bucketIds = Array.from(checkedBoxes).map(cb => cb.value);
-
-        if (bucketIds.length === 0) return;
-
         const payload = {
-            bucket_ids: bucketIds,
             max_archive_size_mb: parseInt(maxArchiveSizeInput.value, 10) || 1024,
             is_archived: filterArchived.checked,
             is_favorite: filterFavorite.checked,
             order: filterOrder.value
         };
+
+        if (activeTab === "timeline") {
+            const checkedBoxes = document.querySelectorAll(".bucket-checkbox:checked");
+            payload.bucket_ids = Array.from(checkedBoxes).map(cb => cb.value);
+            if (payload.bucket_ids.length === 0) return;
+        } else {
+            const checkedBoxes = document.querySelectorAll(".album-checkbox:checked");
+            payload.album_ids = Array.from(checkedBoxes).map(cb => cb.value);
+            if (payload.album_ids.length === 0) return;
+        }
 
         try {
             const res = await fetch("/api/export/start", {

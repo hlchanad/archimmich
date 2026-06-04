@@ -174,7 +174,8 @@ class LoginRequest(BaseModel):
     remember_me: bool
 
 class ExportRequest(BaseModel):
-    bucket_ids: List[str]
+    bucket_ids: Optional[List[str]] = None
+    album_ids: Optional[List[str]] = None
     max_archive_size_mb: int
     is_archived: bool = False
     with_partners: bool = False
@@ -187,9 +188,12 @@ class ExportRequest(BaseModel):
 @app.get("/api/config")
 def get_config():
     config = load_saved_config()
+    server_url = config.get("server_ip", "").replace("/api", "")
+    if not server_url:
+        server_url = "http://immich-server:2283"
     # Remove sensitive key if any, or pass for auto-fill helper
     return {
-        "server_url": config.get("server_ip", "").replace("/api", ""),
+        "server_url": server_url,
         "api_key": config.get("api_key", ""),
         "downloads_dir": DOWNLOADS_DIR
     }
@@ -267,58 +271,105 @@ def get_buckets(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/albums")
+def get_albums():
+    em = state["export_manager"]
+    if not em:
+        raise HTTPException(status_code=400, detail="Not logged in")
+    try:
+        albums = em.get_albums()
+        return {"albums": albums}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 def run_download_in_background(req: ExportRequest):
     state["is_downloading"] = True
     state["stop_requested"] = False
     em = state["export_manager"]
     
     try:
-        web_logger.append(f"Starting export for {len(req.bucket_ids)} bucket(s)")
-        
-        # Max archive size config conversion (MB to Bytes)
         archive_size_bytes = req.max_archive_size_mb * 1024 * 1024 if req.max_archive_size_mb > 0 else None
         
-        for i, bucket_time in enumerate(req.bucket_ids):
-            if state["stop_requested"]:
-                web_logger.append("Export cancelled by user request.")
-                break
+        if req.album_ids:
+            web_logger.append(f"Starting export for {len(req.album_ids)} album(s)")
+            
+            # Fetch albums to get their names
+            try:
+                albums = em.get_albums()
+                album_map = {a["id"]: a["albumName"] for a in albums}
+            except Exception as e:
+                web_logger.append(f"Failed to fetch albums map: {e}")
+                album_map = {}
                 
-            state["current_status"] = f"Processing bucket {i+1} of {len(req.bucket_ids)}"
-            web_logger.append(f"Fetching assets for bucket: {bucket_time}")
-            
-            assets = em.get_timeline_bucket_assets(
-                time_bucket=bucket_time,
-                is_archived=req.is_archived,
-                with_partners=req.with_partners,
-                with_stacked=req.with_stacked,
-                visibility=req.visibility,
-                is_favorite=req.is_favorite,
-                is_trashed=req.is_trashed,
-                order=req.order
-            )
-            
-            if not assets:
-                web_logger.append(f"No assets found in bucket {bucket_time}. Skipping.")
-                continue
+            for i, album_id in enumerate(req.album_ids):
+                if state["stop_requested"]:
+                    web_logger.append("Export cancelled by user request.")
+                    break
+                    
+                album_name = album_map.get(album_id, f"Album_{album_id}")
+                import re
+                safe_album_name = re.sub(r'[\\/*?:"<>|]', "_", album_name)
                 
-            asset_ids = [a["id"] for a in assets]
+                state["current_status"] = f"Processing album {i+1} of {len(req.album_ids)}"
+                web_logger.append(f"Preparing archive for album: {album_name} ({album_id})")
+                
+                # Prepare archive metadata
+                info = em.prepare_archive(album_id=album_id, archive_size_bytes=archive_size_bytes)
+                total_size = info.get("totalSize", 0)
+                
+                # Call download logic
+                result = em.download_archive(
+                    album_id=album_id,
+                    bucket_name=safe_album_name,
+                    total_size=total_size,
+                    current_download_progress_bar=state["progress_bar"]
+                )
+                
+                web_logger.append(f"Album {album_name} completed with result: {result}")
+        else:
+            web_logger.append(f"Starting export for {len(req.bucket_ids)} bucket(s)")
             
-            # Prepare archive metadata
-            info = em.prepare_archive(asset_ids=asset_ids, archive_size_bytes=archive_size_bytes)
-            total_size = info.get("totalSize", 0)
-            
-            formatted_bucket_name = em.format_time_bucket(bucket_time)
-            
-            # Call untouched download logic
-            result = em.download_archive(
-                asset_ids=asset_ids,
-                bucket_name=formatted_bucket_name,
-                total_size=total_size,
-                current_download_progress_bar=state["progress_bar"]
-            )
-            
-            web_logger.append(f"Bucket {formatted_bucket_name} completed with result: {result}")
-            
+            for i, bucket_time in enumerate(req.bucket_ids):
+                if state["stop_requested"]:
+                    web_logger.append("Export cancelled by user request.")
+                    break
+                    
+                state["current_status"] = f"Processing bucket {i+1} of {len(req.bucket_ids)}"
+                web_logger.append(f"Fetching assets for bucket: {bucket_time}")
+                
+                assets = em.get_timeline_bucket_assets(
+                    time_bucket=bucket_time,
+                    is_archived=req.is_archived,
+                    with_partners=req.with_partners,
+                    with_stacked=req.with_stacked,
+                    visibility=req.visibility,
+                    is_favorite=req.is_favorite,
+                    is_trashed=req.is_trashed,
+                    order=req.order
+                )
+                
+                if not assets:
+                    web_logger.append(f"No assets found in bucket {bucket_time}. Skipping.")
+                    continue
+                    
+                asset_ids = [a["id"] for a in assets]
+                
+                # Prepare archive metadata
+                info = em.prepare_archive(asset_ids=asset_ids, archive_size_bytes=archive_size_bytes)
+                total_size = info.get("totalSize", 0)
+                
+                formatted_bucket_name = em.format_time_bucket(bucket_time)
+                
+                # Call untouched download logic
+                result = em.download_archive(
+                    asset_ids=asset_ids,
+                    bucket_name=formatted_bucket_name,
+                    total_size=total_size,
+                    current_download_progress_bar=state["progress_bar"]
+                )
+                
+                web_logger.append(f"Bucket {formatted_bucket_name} completed with result: {result}")
+                
         state["current_status"] = "Completed" if not state["stop_requested"] else "Cancelled"
     except Exception as e:
         web_logger.append(f"Error during export background task: {str(e)}")

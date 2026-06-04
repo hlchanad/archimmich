@@ -73,22 +73,25 @@
 
         <!-- Main Dashboard Content -->
         <main class="dashboard-grid">
-            <!-- Left Side: Buckets List -->
+            <!-- Left Side: Buckets / Albums List -->
             <section class="glass-panel main-content">
                 <div class="section-header">
-                    <h2>Media Buckets</h2>
+                    <div class="tab-container">
+                        <button id="tab-timeline" class="tab-btn active">Timeline</button>
+                        <button id="tab-albums" class="tab-btn">Albums</button>
+                    </div>
                     <div class="bucket-actions">
                         <button id="btn-fetch-buckets" class="btn btn-secondary">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon">
                                 <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
                             </svg>
-                            Fetch Buckets
+                            <span id="fetch-btn-text">Fetch Buckets</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- Bucket Filters Form -->
-                <div class="filter-bar">
+                <div id="timeline-filters" class="filter-bar">
                     <div class="filter-item">
                         <label for="filter-archived">
                             <input type="checkbox" id="filter-archived"> Archived Only
@@ -100,7 +103,7 @@
                         </label>
                     </div>
                     <div class="filter-item">
-                        <label for="filter-order">Order</label>
+                        <label>Order</label>
                         <div class="custom-select" id="custom-order-select">
                             <div class="custom-select-trigger">
                                 <span id="custom-select-value">Newest First</span>
@@ -114,14 +117,21 @@
                             </div>
                         </div>
                         <select id="filter-order" class="hidden">
-                            <option value="desc" selected>Newest First</option>
+                            <option value="desc">Newest First</option>
                             <option value="asc">Oldest First</option>
                         </select>
                     </div>
                 </div>
 
+                <!-- Album Filters Form (Search box) -->
+                <div id="album-filters" class="filter-bar hidden">
+                    <div class="filter-item search-item" style="flex: 1;">
+                        <input type="text" id="search-albums" placeholder="Search albums by name..." style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.04); color: white; font-family: inherit; font-size: 14px; transition: var(--transition);">
+                    </div>
+                </div>
+
                 <!-- Table of Buckets -->
-                <div class="table-container">
+                <div id="timeline-container" class="table-container">
                     <table id="buckets-table">
                         <thead>
                             <tr>
@@ -133,6 +143,24 @@
                         <tbody id="buckets-list">
                             <tr>
                                 <td colspan="3" class="placeholder-text">Click "Fetch Buckets" to retrieve timeline.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Table of Albums -->
+                <div id="albums-container" class="table-container hidden">
+                    <table id="albums-table">
+                        <thead>
+                            <tr>
+                                <th width="40"><input type="checkbox" id="select-all-albums"></th>
+                                <th>Album Name</th>
+                                <th>Count</th>
+                            </tr>
+                        </thead>
+                        <tbody id="albums-list">
+                            <tr>
+                                <td colspan="3" class="placeholder-text">Click "Fetch Albums" to retrieve albums.</td>
                             </tr>
                         </tbody>
                     </table>
