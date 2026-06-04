@@ -27,6 +27,52 @@ You can download the latest version of ArchImmich from the official GitHub relea
    - **MacOS**: Double-click on `ArchImmich_MacOS_vX.X.X.dmg` and move `ArchImmich.app` to your Applications folder
    - **Windows**: Unzip the archive and double-click `ArchImmich.exe`
 
+---
+
+## **Dockerized Web Version (v0.1.0)**
+
+For headless server setups and NAS deployments (e.g., Synology, Unraid, TrueNAS), you can run the web-wrapped version of ArchImmich. This runs a FastAPI web client on port `8000` powered by the underlying `v0.3.1` desktop engine.
+
+### **Quick Start (Docker Run)**
+
+```bash
+docker run -d \
+  --name archimmich-web \
+  -p 8000:8000 \
+  -v /path/to/config:/config \
+  -v /path/to/downloads:/downloads \
+  --restart unless-stopped \
+  ghcr.io/hlchanad/archimmich:latest
+```
+
+### **Docker Compose**
+
+Save the following as `docker-compose.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  archimmich-web:
+    image: ghcr.io/hlchanad/archimmich:latest
+    container_name: archimmich-web
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config:/config
+      - ./downloads:/downloads
+    restart: unless-stopped
+    environment:
+      - ARCHIMMICH_CONFIG_DIR=/config
+      - ARCHIMMICH_DOWNLOADS_DIR=/downloads
+```
+
+Run from your terminal:
+
+```bash
+docker compose up -d
+```
+
 ## **Features**
 
 - **Fetch Media Buckets**:
@@ -339,9 +385,17 @@ If you encounter any issues with the application, please include the relevant lo
 
 ## **Screenshots**
 
-| light theme                                                                               | dark theme                                                                                |
-| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+### **Desktop App**
+
+| light theme | dark theme |
+| --- | --- |
 | ![image](https://github.com/user-attachments/assets/d8f2c476-0136-47e0-80bb-780a0c61aa8f) | ![image](https://github.com/user-attachments/assets/412a111c-dbb7-4227-a019-18f68744da74) |
+
+### **Web Client (Docker)**
+
+| login screen | dashboard list page |
+| --- | --- |
+| ![web_login](web/static/screenshots/web_login.png) | ![web_dashboard](web/static/screenshots/web_dashboard.png) |
 
 ---
 
